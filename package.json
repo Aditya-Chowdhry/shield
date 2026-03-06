@@ -2,11 +2,13 @@
   "name": "shield-reviewer",
   "version": "0.1.0",
   "private": true,
-  "description": "AI-powered code reviewer — GitHub App on Cloudflare Workers",
+  "description": "AI-powered code reviewer — GitHub App, deploy anywhere",
   "type": "module",
   "scripts": {
     "dev": "wrangler dev",
-    "deploy": "wrangler deploy",
+    "deploy:worker": "wrangler deploy",
+    "build:lambda": "node esbuild.lambda.mjs",
+    "deploy:lambda": "npm run build:lambda && sam deploy --guided",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest"
@@ -19,6 +21,7 @@
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20250214.0",
     "@types/node": "^22.0.0",
+    "esbuild": "^0.25.0",
     "typescript": "^5.7.0",
     "vitest": "^3.0.0",
     "wrangler": "^4.0.0"

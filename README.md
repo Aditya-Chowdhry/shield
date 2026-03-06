@@ -2,7 +2,7 @@
 
 AI-powered code reviewer that runs as a GitHub App. Install once on your org, comment `@shield` on any PR, get a thorough review with inline comments and a summary.
 
-Built on Claude. Deployed as a Cloudflare Worker.
+Built on Claude. Deploy to Cloudflare Workers or AWS Lambda — bring your own cloud.
 
 ## What it does
 
@@ -21,7 +21,7 @@ Go to **GitHub Settings > Developer Settings > GitHub Apps > New GitHub App**:
 
 | Setting | Value |
 |---|---|
-| Webhook URL | Your Worker URL (set after deploy) |
+| Webhook URL | Your deploy URL (set after step 2) |
 | Webhook secret | Generate a random string |
 | Pull requests | Read & Write |
 | Contents | Read |
@@ -30,28 +30,54 @@ Go to **GitHub Settings > Developer Settings > GitHub Apps > New GitHub App**:
 
 Generate and download a **private key**.
 
-### 2. Deploy to Cloudflare Workers
+### 2. Deploy
 
 ```bash
-# Clone
 git clone https://github.com/Aditya-Chowdhry/shield.git
 cd shield
 npm install
+```
 
+#### Option A: Cloudflare Workers
+
+Free tier, zero cold starts, no infra to manage.
+
+```bash
 # Set secrets
 wrangler secret put GITHUB_APP_ID
 wrangler secret put GITHUB_PRIVATE_KEY
 wrangler secret put ANTHROPIC_API_KEY
 wrangler secret put WEBHOOK_SECRET
 
-# Optional: Slack notifications
+# Optional
 wrangler secret put SLACK_BOT_TOKEN
 
 # Deploy
-npm run deploy
+npm run deploy:worker
 ```
 
-Update the GitHub App's webhook URL with the Worker URL from the deploy output.
+#### Option B: AWS Lambda
+
+120s timeout, Function URL (no API Gateway needed), SAM for infra-as-code.
+
+```bash
+# Build the Lambda bundle
+npm run build:lambda
+
+# Deploy with SAM (first time — interactive, picks region/stack name)
+sam deploy --guided
+
+# Subsequent deploys
+sam deploy
+```
+
+SAM will prompt for `GitHubAppId`, `GitHubPrivateKey`, `AnthropicApiKey`, and `WebhookSecret`.
+
+For Slack, add env vars to `template.yaml` or set them in the Lambda console.
+
+---
+
+After deploying, update the GitHub App's **webhook URL** with the URL from the deploy output.
 
 ### 3. Install the App
 
@@ -67,7 +93,7 @@ Comment on any PR:
 @shield
 ```
 
-To re-review after pushing changes:
+Re-review after pushing changes:
 
 ```
 @shield recheck
@@ -142,8 +168,12 @@ Requires a Slack bot token with `chat:write`, `users:read.email`, and `conversat
 
 ```
 src/
-├── index.ts              # Cloudflare Worker entry point
-├── webhook.ts            # GitHub webhook parsing + routing
+├── index.ts              # Entry point (re-exports Worker handler)
+├── handlers/
+│   ├── shared.ts         # Shared webhook processing logic
+│   ├── worker.ts         # Cloudflare Worker handler
+│   └── lambda.ts         # AWS Lambda handler
+├── webhook.ts            # GitHub event parsing + routing
 ├── auth.ts               # GitHub App JWT + installation tokens
 ├── engine.ts             # Provider-agnostic review orchestration
 ├── analyzer.ts           # Claude API integration
@@ -173,6 +203,7 @@ src/
 
 Extensibility seams:
 
+- **Add a cloud**: Implement a handler in `src/handlers/` — core logic is shared
 - **Add GitLab**: Implement `VCSProvider` in `providers/gitlab.ts` — zero changes to engine/analyzer/rules
 - **Add rules**: Define in `.shield.yml` or add a `.ts` file in `src/rules/`
 - **Add notifiers**: Implement `Notifier` interface for Teams, Discord, email, etc.
@@ -180,9 +211,10 @@ Extensibility seams:
 ## Local Development
 
 ```bash
-npm run dev          # Start local Worker
-npm run typecheck    # Type-check
-npm run test         # Run tests
+npm run dev              # Start local Worker (wrangler)
+npm run typecheck        # Type-check
+npm run test             # Run tests
+npm run build:lambda     # Build Lambda bundle
 ```
 
 ## License

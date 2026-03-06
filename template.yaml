@@ -1,0 +1,52 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Shield — AI code reviewer GitHub App
+
+Globals:
+  Function:
+    Timeout: 120
+    Runtime: nodejs20.x
+    MemorySize: 256
+
+Resources:
+  ShieldFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: handler.handler
+      CodeUri: dist/lambda/
+      FunctionUrlConfig:
+        AuthType: NONE
+      Environment:
+        Variables:
+          GITHUB_APP_ID: !Ref GitHubAppId
+          GITHUB_PRIVATE_KEY: !Ref GitHubPrivateKey
+          ANTHROPIC_API_KEY: !Ref AnthropicApiKey
+          WEBHOOK_SECRET: !Ref WebhookSecret
+          TRIGGER_PHRASE: '@shield'
+          # CLAUDE_MODEL: claude-sonnet-4-20250514
+          # SLACK_BOT_TOKEN: ''
+          # SLACK_WEBHOOK_URL: ''
+    Metadata:
+      BuildMethod: nodejs20.x
+
+Parameters:
+  GitHubAppId:
+    Type: String
+    Description: GitHub App ID
+  GitHubPrivateKey:
+    Type: String
+    Description: GitHub App private key (PEM)
+    NoEcho: true
+  AnthropicApiKey:
+    Type: String
+    Description: Anthropic API key
+    NoEcho: true
+  WebhookSecret:
+    Type: String
+    Description: GitHub webhook secret
+    NoEcho: true
+
+Outputs:
+  WebhookUrl:
+    Description: Use this URL as your GitHub App webhook URL
+    Value: !GetAtt ShieldFunctionUrl.FunctionUrl
