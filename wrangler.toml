@@ -1,0 +1,17 @@
+name = "shield-reviewer"
+main = "src/index.ts"
+compatibility_date = "2025-03-01"
+compatibility_flags = ["nodejs_compat"]
+
+# Secrets (set via `wrangler secret put`):
+#   GITHUB_APP_ID
+#   GITHUB_PRIVATE_KEY
+#   ANTHROPIC_API_KEY
+#   WEBHOOK_SECRET
+#   SLACK_BOT_TOKEN (optional)
+#   SLACK_WEBHOOK_URL (optional)
+
+# Optional environment variables
+# [vars]
+# TRIGGER_PHRASE = "@shield"
+# CLAUDE_MODEL = "claude-sonnet-4-20250514"
